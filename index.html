@@ -394,6 +394,9 @@ async function createRoom() {
   G.gameCode = code;
   
   try {
+    console.log('Creating room with code:', code);
+    console.log('Supabase instance:', supabase);
+    
     const { data, error } = await supabase.from('games').insert({
       game_code: code,
       player1_name: G.p1,
@@ -401,7 +404,12 @@ async function createRoom() {
       game_status: 'waiting'
     }).select().single();
     
-    if (error) throw error;
+    console.log('Insert result:', { data, error });
+    
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
     
     G.gameId = data.id;
     document.getElementById('waitcode').textContent = code;
@@ -410,6 +418,8 @@ async function createRoom() {
     listenForGameStart();
     show('scr-waiting');
   } catch (err) {
+    console.error('Full error:', err);
+    alert('Error: ' + err.message);
     toast('Error creating room: ' + err.message);
   }
 }
