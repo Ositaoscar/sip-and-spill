@@ -495,6 +495,18 @@ async function loadQuestion(){
 }
 
 // FIX: 4s abort timeout on API; full shuffled local bank; repeat prevention via usedIds
+const CATEGORY_KEYWORDS={
+  disney:['disney','princess','prince','castle','frozen','aladdin','lion','toy story','animated','character','elsa','simba','cinderella','ariel'],
+  pop:['tv','show','movie','music','song','album','artist','band','film','netflix','hbo','youtube','2000','1990','90s'],
+  celeb:['celebrity','actor','actress','singer','rapper','musician','kardashian','celebrity','fame','award','oscar','grammy','instagram']
+};
+
+function validateCategoryMatch(question){
+  const q=question.toLowerCase();
+  const keywords=CATEGORY_KEYWORDS[G.cat]||[];
+  return keywords.some(kw=>q.includes(kw));
+}
+
 async function fetchMoreQuestions(){
   try{
     const catMap={disney:21,pop:12,celeb:26};
@@ -506,16 +518,19 @@ async function fetchMoreQuestions(){
     if(!resp.ok) throw new Error('non-ok');
     const data=await resp.json();
     if(data.response_code===0&&data.results?.length){
-      data.results.forEach(item=>{
-        const correct=Math.floor(Math.random()*4);
-        const opts=item.incorrect_answers.map(a=>decodeHTML(a));
-        opts.splice(correct,0,decodeHTML(item.correct_answer));
-        G.queue.push({q:decodeHTML(item.question),options:opts,answer:correct,fact:''});
-      });
-      return;
+      const validQuestions=data.results.filter(item=>validateCategoryMatch(item.question));
+      if(validQuestions.length>0){
+        validQuestions.forEach(item=>{
+          const correct=Math.floor(Math.random()*4);
+          const opts=item.incorrect_answers.map(a=>decodeHTML(a));
+          opts.splice(correct,0,decodeHTML(item.correct_answer));
+          G.queue.push({q:decodeHTML(item.question),options:opts,answer:correct,fact:''});
+        });
+        return;
+      }
     }
   } catch(_){ /* CORS/timeout — fall through */ }
-  // Local bank fallback
+  // Local bank fallback — only Disney questions for Disney, etc.
   const pool=BANK[G.cat]||[];
   const unused=pool.filter((_,i)=>!G.usedIds.has(i));
   const src=unused.length>0?unused:(G.usedIds.clear(),[...pool]);
