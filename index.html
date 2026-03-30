@@ -270,7 +270,8 @@ let G = {
   cat:null, sub:null,
   usedIds:new Set(), queue:[], qn:0, answered:false,
   gameId:null, gameCode:null, isHost:false, isLocal:false, subscription:null, pollInterval:null,
-  lastActivityTime:0, idleCheckInterval:null, warnedIdle:false
+  lastActivityTime:0, idleCheckInterval:null, warnedIdle:false,
+  loadedQuestions:null
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -338,6 +339,36 @@ function buildShowQuestionBank(){
 }
 
 const GENERATED_QUESTIONS=buildShowQuestionBank();
+
+// ═══════════════════════════════════════════════════════════════
+//  LOAD QUESTIONS FROM JSON (INTELLIGENT GENERATION)
+// ═══════════════════════════════════════════════════════════════
+async function loadQuestionsFromFile(){
+  try{
+    const resp=await fetch('data/generated_questions.json');
+    if(!resp.ok) return null;
+    const data=await resp.json();
+    return data;
+  }catch(e){
+    console.warn('⚠️  Could not load generated_questions.json',e);
+    return null;
+  }
+}
+
+// Initialize: try loading generated questions, fallback to BANK
+async function initializeQuestions(){
+  const loaded=await loadQuestionsFromFile();
+  if(loaded && loaded.disney && loaded.disney.length>0){
+    console.log('✅ Loaded custom-generated questions');
+    G.loadedQuestions=loaded;
+  }else{
+    console.log('ℹ️  Using default question bank (BANK object)');
+    G.loadedQuestions=null;
+  }
+}
+
+// Call on page load (after Supabase init)
+window.addEventListener('load',initializeQuestions);
 
 // ═══════════════════════════════════════════════════════════════
 //  QUESTION BANK (3-OPTION DIFFICULTY)
@@ -685,29 +716,15 @@ function validateCategoryMatch(question){
 }
 
 async function fetchMoreQuestions(){
-  try{
-    const catMap={disney:21,pop:12,celeb:26};
-    const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),4000);
-    const resp=await fetch(
-      `https://opentdb.com/api.php?amount=5&category=${catMap[G.cat]}&difficulty=medium&type=multiple`,
-      {signal:ctrl.signal}
-    ); clearTimeout(t);
-    if(!resp.ok) throw new Error('non-ok');
-    const data=await resp.json();
-    if(data.response_code===0&&data.results?.length){
-      const validQuestions=data.results.filter(item=>validateCategoryMatch(item.question));
-      if(validQuestions.length>0){
-        validQuestions.forEach(item=>{
-          const correct=Math.floor(Math.random()*4);
-          const opts=item.incorrect_answers.map(a=>decodeHTML(a));
-          opts.splice(correct,0,decodeHTML(item.correct_answer));
-          G.queue.push({q:decodeHTML(item.question),options:opts,answer:correct,fact:''});
-        });
-        return;
-      }
-    }
-  } catch(_){ /* CORS/timeout — fall through */ }
-  // Local bank fallback — only Disney questions for Disney, etc.
+  // Use loaded custom questions if available (intelligent generation)
+  if(G.loadedQuestions && G.loadedQuestions[G.cat]?.length>0){
+    const pool=G.loadedQuestions[G.cat];
+    const unused=pool.filter((_,i)=>!G.usedIds.has(`loaded_${i}`));
+    const src=unused.length>0?unused:(G.usedIds.clear(),[...pool]);
+    shuffle(src).forEach((q,idx)=>{ G.usedIds.add(`loaded_${pool.indexOf(q)}`); G.queue.push(q); });
+    return;
+  }
+  // Fallback to default BANK object
   const pool=BANK[G.cat]||[];
   const unused=pool.filter((_,i)=>!G.usedIds.has(i));
   const src=unused.length>0?unused:(G.usedIds.clear(),[...pool]);

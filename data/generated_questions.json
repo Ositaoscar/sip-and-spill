@@ -1,0 +1,43 @@
+{
+  "disney": [
+    {
+      "q": "Which Disney princess sings 'Part of Your World'?",
+      "options": ["Ariel", "Rapunzel", "Cinderella"],
+      "answer": 0,
+      "fact": "The Little Mermaid kicked off the Disney Renaissance in 1989.",
+      "show": "The Little Mermaid",
+      "added_date": "2024-01-01T00:00:00"
+    }
+  ],
+  "pop": [
+    {
+      "q": "What year did Friends first air?",
+      "options": ["1994", "1996", "1991"],
+      "answer": 0,
+      "fact": "Friends ran for 10 seasons and became a global phenomenon.",
+      "show": "Friends",
+      "added_date": "2024-01-01T00:00:00"
+    }
+  ],
+  "celeb": [
+    {
+      "q": "Which celebrity owns a production company called HicoriaDicoria?",
+      "options": ["Reese Witherspoon", "Oprah Winfrey", "Jennifer Aniston"],
+      "answer": 0,
+      "fact": "Reese's production company has created hit shows like Big Little Lies.",
+      "show": "Celebrity Entrepreneurs",
+      "added_date": "2024-01-01T00:00:00"
+    }
+  ],
+  "custom": [],
+  "metadata": {
+    "last_updated": "2024-01-01T00:00:00",
+    "total_questions": 3,
+    "categories": {
+      "disney": 1,
+      "pop": 1,
+      "celeb": 1,
+      "custom": 0
+    }
+  }
+}
