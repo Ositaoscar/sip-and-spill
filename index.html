@@ -233,14 +233,33 @@ const SUPABASE_KEY = 'sb_publishable_KXP_5rlqIamncut4V0o9ZA_LP9arlVy';
 
 let sb = null;
 try {
-  const { createClient } = window.supabase;
-  if (typeof createClient === 'function' && (SUPABASE_KEY.startsWith('eyJ') || SUPABASE_KEY.startsWith('sb_'))) {
-    sb = createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log('✅ Supabase ready');
+  if (!window.supabase) {
+    console.error('❌ Supabase JS SDK not loaded. Check CDN.');
+  } else if (typeof window.supabase.createClient !== 'function') {
+    console.error('❌ createClient not found in Supabase SDK.');
+  } else if (!SUPABASE_KEY.startsWith('eyJ') && !SUPABASE_KEY.startsWith('sb_')) {
+    console.error('❌ Invalid SUPABASE_KEY format. Must start with "eyJ" or "sb_"');
   } else {
-    console.warn('⚠️ Supabase offline: replace SUPABASE_KEY with your anon JWT. Online rooms disabled.');
+    const { createClient } = window.supabase;
+    sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('✅ Supabase initialized:', { url: SUPABASE_URL, keyFormat: SUPABASE_KEY.substring(0,15) + '...' });
   }
-} catch (e) { console.warn('Supabase init error:', e.message); }
+} catch (e) { 
+  console.error('❌ Supabase init failed:', e.message || e);
+}
+
+// Verify Supabase is ready
+window.addEventListener('load', async ()=>{
+  if(sb){
+    try{
+      const{data,error}=await sb.from('games').select('id').limit(1);
+      if(error) console.warn('⚠️ Supabase connection check failed:', error.message);
+      else console.log('✓ Supabase connection verified');
+    }catch(e){
+      console.error('⚠️ Supabase connectivity issue:', e.message);
+    }
+  }
+});
 
 // ═══════════════════════════════════════════════════════════════
 //  GAME STATE
@@ -436,7 +455,15 @@ function startLocal(){
 function generateGameCode(){ return Math.random().toString(36).substring(2,8).toUpperCase(); }
 
 async function createRoom(){
-  if(!sb){ toast('⚠️ Replace SUPABASE_KEY with your anon JWT — see console'); return; }
+  console.log('🔵 createRoom called. Supabase ready?', sb ? 'Yes' : 'No');
+  if(!sb){ 
+    toast('❌ Supabase not connected (check console for details). Use Local Play instead.'); 
+    console.error('Supabase failed to initialize. Check:');
+    console.error('1. Is Supabase CDN loaded? window.supabase exists?');
+    console.error('2. Is SUPABASE_KEY valid? Must start with eyJ or sb_');
+    console.error('3. Is network available?');
+    return; 
+  }
   const btn=document.getElementById('create-btn');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Creating…';
   G.p1=document.getElementById('p1name').value.trim()||'Player 1';
@@ -444,30 +471,47 @@ async function createRoom(){
   G.isHost=true; G.isLocal=false;
   const code=generateGameCode(); G.gameCode=code;
   try {
+    console.log('📤 Inserting game:', {code, p1:G.p1, p2:G.p2});
     const {data,error}=await sb.from('games').insert({
       game_code:code,player1_name:G.p1,player2_name:G.p2,game_status:'waiting'
     }).select().single();
-    if(error) throw error;
+    if(error){
+      console.error('Database error:', error);
+      throw error;
+    }
+    console.log('✅ Game created:', data.id);
     G.gameId=data.id;
     document.getElementById('waitcode').textContent=code;
     listenForGameStart(); show('scr-waiting');
   } catch(err){
-    console.error('createRoom:',err);
+    console.error('❌ createRoom error:', err);
     toast('Error: '+(err.message||'unknown'));
   } finally { btn.disabled=false; btn.innerHTML='Generate Code 🎯'; }
 }
 
 async function joinRoom(){
-  if(!sb){ toast('⚠️ Replace SUPABASE_KEY with your anon JWT — see console'); return; }
+  console.log('🔵 joinRoom called. Supabase ready?', sb ? 'Yes' : 'No');
+  if(!sb){ 
+    toast('❌ Supabase not connected. Use Local Play instead.'); 
+    console.error('Supabase failed. Check console.');
+    return; 
+  }
   const btn=document.getElementById('join-btn');
   const name=document.getElementById('joinname').value.trim()||'Player 2';
   const code=document.getElementById('roomcode').value.trim().toUpperCase();
   if(!code){ toast('Enter a game code!'); return; }
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Joining…';
   try {
+    console.log('🔍 Looking for game code:', code);
     const {data,error}=await sb.from('games').select()
       .eq('game_code',code).eq('game_status','waiting').single();
-    if(error||!data){ toast('Code not found or game already started'); return; }
+    if(error){
+      console.error('Lookup error:', error);
+      toast('Code not found or game already started'); 
+      return;
+    }
+    if(!data){ toast('Code not found'); return; }
+    console.log('✅ Game found:', data.id);
     G.gameId=data.id; G.gameCode=code;
     G.p1=data.player1_name; G.p2=name;
     G.isHost=false; G.isLocal=false;
@@ -475,8 +519,12 @@ async function joinRoom(){
       player2_name:name, game_status:'active'
     }).eq('id',G.gameId);
     if(upErr) throw upErr;
+    console.log('✅ Joined successfully');
     resetGameState(); resetCatUI(); show('scr-cats');
-  } catch(err){ toast('Join error: '+(err.message||'unknown')); }
+  } catch(err){ 
+    console.error('❌ joinRoom error:', err);
+    toast('Join error: '+(err.message||'unknown')); 
+  }
   finally { btn.disabled=false; btn.innerHTML='Join 🎉'; }
 }
 
