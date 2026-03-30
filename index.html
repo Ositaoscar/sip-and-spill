@@ -250,7 +250,8 @@ let G = {
   cur:0, pts:[0,0], drinks:[0,0],
   cat:null, sub:null,
   usedIds:new Set(), queue:[], qn:0, answered:false,
-  gameId:null, gameCode:null, isHost:false, isLocal:false, subscription:null
+  gameId:null, gameCode:null, isHost:false, isLocal:false, subscription:null,
+  lastActivityTime:0, idleCheckInterval:null, warnedIdle:false
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -394,8 +395,9 @@ function listenForGameStart(){
     ).subscribe();
 }
 
-function leaveGame(){ cleanupSubscription(); G.gameId=null; G.gameCode=null; show('scr-welcome'); }
+function leaveGame(){ cleanupSubscription(); stopIdleCheck(); G.gameId=null; G.gameCode=null; show('scr-welcome'); }
 function cleanupSubscription(){ if(G.subscription){ G.subscription.unsubscribe(); G.subscription=null; } }
+function goHome(){ stopIdleCheck(); cleanupSubscription(); G.gameId=null; G.gameCode=null; show('scr-welcome'); }
 
 // ═══════════════════════════════════════════════════════════════
 //  CATEGORY SELECTION
@@ -419,8 +421,23 @@ function pickSub(el,s){
 
 function startGame(){
   if(!G.cat||!G.sub) return;
-  resetGameState(); show('scr-game'); refreshUI(); loadQuestion();
+  resetGameState(); resetIdleTimer(); startIdleCheck(); show('scr-game'); refreshUI(); loadQuestion();
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  IDLE TIMER (3 min auto-close)
+// ═══════════════════════════════════════════════════════════════
+function resetIdleTimer(){ G.lastActivityTime=Date.now(); G.warnedIdle=false; }
+function startIdleCheck(){
+  if(G.idleCheckInterval) clearInterval(G.idleCheckInterval);
+  G.idleCheckInterval=setInterval(()=>{
+    const elapsed=Date.now()-G.lastActivityTime;
+    const warn2m=120000, close3m=180000;
+    if(elapsed>close3m){ clearInterval(G.idleCheckInterval); toast('⏱️ Game saved to home'); goHome(); }
+    else if(elapsed>warn2m&&!G.warnedIdle){ G.warnedIdle=true; toast('⏰ Game closing in 1 minute...'); }
+  },10000);
+}
+function stopIdleCheck(){ if(G.idleCheckInterval){ clearInterval(G.idleCheckInterval); G.idleCheckInterval=null; } }
 
 // ═══════════════════════════════════════════════════════════════
 //  STATE RESET
@@ -515,6 +532,7 @@ function decodeHTML(html){ const t=document.createElement('textarea'); t.innerHT
 //  GAMEPLAY
 // ═══════════════════════════════════════════════════════════════
 function pick(chosen,correct){
+  resetIdleTimer();
   if(G.answered) return;
   G.answered=true;
   document.querySelectorAll('.option').forEach((el,i)=>{
@@ -549,7 +567,7 @@ function pick(chosen,correct){
   }
 }
 
-function nextQuestion(){ G.cur=1-G.cur; refreshUI(); loadQuestion(); }
+function nextQuestion(){ resetIdleTimer(); G.cur=1-G.cur; refreshUI(); loadQuestion(); }
 
 function showWinner(){
   const p1w=G.pts[0]>=G.pts[1];
@@ -561,7 +579,7 @@ function showWinner(){
   show('scr-winner'); confetti(55);
 }
 
-function playAgain(){ resetGameState(); resetCatUI(); show('scr-cats'); }
+function playAgain(){ resetGameState(); resetIdleTimer(); startIdleCheck(); resetCatUI(); show('scr-cats'); }
 
 // ═══════════════════════════════════════════════════════════════
 //  FX
