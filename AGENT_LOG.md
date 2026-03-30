@@ -125,12 +125,17 @@
 - [ ] Test game locally: hard refresh, play one round
 - [ ] Verify Supabase connection: check browser console (F12)
 
-### If Working on Questions:
-- [ ] Run `python generate_questions.py`
-- [ ] Set `ANTHROPIC_API_KEY` first
-- [ ] Research 5-10 shows (daily budget: $0.05)
-- [ ] Monitor `data/research_progress.json` for tokens used
+### If Working on Questions (Agent-Driven):
+- [ ] Set `ANTHROPIC_API_KEY` first: `export ANTHROPIC_API_KEY=sk-ant-...`
+- [ ] Use batch research script: `python research_batch.py auto 5`
+- [ ] Or specify shows: `python research_batch.py shows "Breaking Bad" "pop" "Friends" "pop"`
+- [ ] Check progress: `python research_batch.py status`
+- [ ] Daily budget: $0.05 (10,000 tokens) — resets tomorrow
 - [ ] Game auto-loads from `data/generated_questions.json` on restart
+
+**Latest files:**
+- `research_batch.py` — Agent runs this (all autonomous, no interaction)
+- `AGENT_RESEARCH_GUIDE.md` — How to direct agent research
 
 ### If Working on Supabase:
 - [ ] Check credentials in `.env.example`
