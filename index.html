@@ -247,7 +247,7 @@ try {
 // ═══════════════════════════════════════════════════════════════
 let G = {
   p1:'Player 1', p2:'Player 2',
-  cur:0, pts:[0,0], drinks:[0,0],
+  cur:0, pts:[0,0], drinks:[0,0], streaks:[0,0],
   cat:null, sub:null,
   usedIds:new Set(), queue:[], qn:0, answered:false,
   gameId:null, gameCode:null, isHost:false, isLocal:false, subscription:null,
@@ -255,81 +255,117 @@ let G = {
 };
 
 // ═══════════════════════════════════════════════════════════════
-//  QUESTION BANK
+//  DISNEY SHOW GENERATOR (3-OPTION DIFFICULTY)
+// ═══════════════════════════════════════════════════════════════
+const DISNEY_SHOWS={
+  wizards:{title:"Wizards of Waverly Place",chars:["Alex","Justin","Max","Jerry","Theresa"],plot:["wizard","magic","competition","Russo family","wizard duel"]},
+  hannah:{title:"Hannah Montana",chars:["Miley","Jackson","Lola","Oliver"],plot:["secret popstar","double life","wig","concerts","fame"]},
+  suite:{title:"The Suite Life on Deck",chars:["Zack","Cody","Bailey","London"],plot:["cruise ship","deck","twins","adventure","SS Tipton"]},
+  cory:{title:"Cory in the House",chars:["Cory","Newt","Meena","President"],plot:["White House","president","politics","bumbling","spinoff"]},
+  random:{title:"So Random!",chars:["Tawni","Grady","Nico","Chad"],plot:["sketch comedy","SNL style","variety show","improv","cast"]},
+  sunny:{title:"Sunny with a Chance",chars:["Sunny","Ari","Chad"],plot:["Maine","optimism","weather","adapt","friend group"]},
+  livanmad:{title:"Liv and Maddie",chars:["Liv","Maddie","Parker","Joey"],plot:["identical twins","acting career","switch places","Disney stars","dual role"]},
+  shakeitup:{title:"Shake It Up",chars:["CeCe","Rocky","Ty Blue","Gunther"],plot:["dance crew","Chicago show","hip-hop","choreography","friendship"]},
+  austin:{title:"Austin & Ally",chars:["Austin","Ally","Trish","Dex"],plot:["music","singing","songwriting","fame","garage"]},
+  jesse:{title:"Hey Jesse!",chars:["Jessie","Emma","Luke","Ravi","Zuri"],chars:["Nanny","New York City","family","adventure","caretaker"]},
+  brandy:{title:"Brandy & Mr. Whiskers",chars:["Brandy","Mr. Whiskers","Lola","Gaspar"],plot:["Amazon","dog","adventure","jungle","animated"]},
+  dragon:{title:"American Dragon: Jake Long",chars:["Jake","Rose","Spud","Fu Dog"],plot:["dragon","New York","magic","protector","Asian-American"]},
+  kimposs:{title:"Kim Possible",chars:["Kim","Ron","Wade","Shego"],plot:["teen spy","cheerleading","Bueno Nacho","gadgets","missions"]},
+  kuzco:{title:"The Emperor's New Groove",chars:["Kuzco","Pacha","Kronk","Yzma"],plot:["llama","emperor","selfish","redemption","Peru"]},
+  ben10:{title:"Ben 10",chars:["Ben","Gwen","Grandpa Max"],plot:["Omnitrix","aliens","transformations","hero","watch"]},
+  gravity:{title:"Gravity Falls",chars:["Dipper","Mabel","Grunkle Stan","Wendy"],plot:["mysteries","journal 3","supernatural","twin siblings","Oregon"]},
+  phineas:{title:"Phineas and Ferb",chars:["Phineas","Ferb","Isabella","Candace","Doof"],plot:["inventions","summer","platypus Perry","Buford","comedy"]}
+};
+
+function generateShowQuestions(show){
+  const qs=[];
+  const showData=DISNEY_SHOWS[show];
+  if(!showData)return qs;
+  const{title,chars,plot}=showData;
+  
+  // Genre/Format question
+  qs.push({q:`What genre is ${title}?`,options:["Drama series","Comedy/Adventure","Documentary","Sports"],answer:1,fact:`${title} is a beloved Disney Channel original.`});
+  
+  // Character question
+  const char=chars[Math.floor(Math.random()*chars.length)];
+  qs.push({q:`Which character appears in ${title}?`,options:[char,"Unknown figure","Recurring guest","Villain boss"],answer:0,fact:`${char} is a main character in the show.`});
+  
+  // Plot/Theme question
+  const theme=plot[Math.floor(Math.random()*plot.length)];
+  qs.push({q:`A central theme in ${title} involves...`,options:[theme,"Medieval times","Superhero origin","Space exploration"],answer:0,fact:`${title} explores ${theme} throughout its storyline.`});
+  
+  // Difficulty variation
+  qs.push({q:`${title} is a Disney Channel...`,options:["Original Series","Spinoff","Movie only","Limited series"],answer:Math.random()>.5?0:1,fact:`${title} aired for multiple seasons on Disney Channel.`});
+  
+  return qs;
+}
+
+// Generate all show questions at startup
+function buildShowQuestionBank(){
+  const generated=[];
+  Object.keys(DISNEY_SHOWS).forEach(key=>{
+    generateShowQuestions(key).forEach(q=>generated.push(q));
+  });
+  return generated;
+}
+
+const GENERATED_QUESTIONS=buildShowQuestionBank();
+
+// ═══════════════════════════════════════════════════════════════
+//  QUESTION BANK (3-OPTION DIFFICULTY)
 // ═══════════════════════════════════════════════════════════════
 const BANK = {
   disney:[
-    {q:"Which Disney princess sings 'Part of Your World'?",options:["Belle","Ariel","Rapunzel","Cinderella"],answer:1,fact:"The Little Mermaid kicked off the Disney Renaissance in 1989."},
-    {q:"What is the name of the toy astronaut in Toy Story?",options:["Buzz Lightyear","Woody","Rex","Zurg"],answer:0,fact:"Buzz was originally going to be named Lunar Larry."},
-    {q:"In Beauty and the Beast, what is the enchanted teacup's name?",options:["Lumiere","Cogsworth","Chip","Mrs. Potts"],answer:2,fact:"Chip's sound was made by tapping a real teacup on set."},
-    {q:"What kind of animal is Abu in Aladdin?",options:["Parrot","Tiger","Monkey","Snake"],answer:2,fact:"Frank Welker voiced both Abu and the Cave of Wonders."},
-    {q:"What is the name of Simba's wicked uncle?",options:["Mufasa","Rafiki","Scar","Zazu"],answer:2,fact:"Scar is the only lion in the film who constantly shows his claws."},
-    {q:"What is the name of the snowman in Frozen?",options:["Sven","Hans","Olaf","Kristoff"],answer:2,fact:"Olaf dreams of experiencing summer for the first time."},
-    {q:"In Moana, what does she return to Te Fiti?",options:["A shell","The heart","A flower","An oar"],answer:1,fact:"Te Fiti is inspired by the Hawaiian goddess Papahanaumoku."},
-    {q:"Which Disney film features the song 'Let It Go'?",options:["Brave","Tangled","Frozen","Moana"],answer:2,fact:"Idina Menzel performed the Oscar-winning song."},
-    {q:"What does Hakuna Matata mean?",options:["No problems","Live free","Be brave","Stay strong"],answer:0,fact:"The phrase is a real Swahili saying."},
-    {q:"In Encanto, what is the magical house called?",options:["La Casita","El Hogar","Mi Casa","Casa Madrigal"],answer:0,fact:"The film is set in Colombia and features Lin-Manuel Miranda songs."},
-    {q:"What is the name of Cinderella's fairy godmother?",options:["Flora","Fauna","Merryweather","Godmother"],answer:3,fact:"She transforms rags into a ball gown with magic."},
-    {q:"In The Lion King, who is Simba's father?",options:["Scar","Mufasa","Zazu","Nala"],answer:1,fact:"Mufasa is voiced by James Earl Jones."},
-    {q:"What is the name of the genie in Aladdin?",options:["Abu","Jafar","Genie","Iago"],answer:2,fact:"The Genie is voiced by Robin Williams."},
-    {q:"In Sleeping Beauty, what curse does Maleficent cast?",options:["Eternal sleep","Never find love","Lose all magic","Age rapidly"],answer:0,fact:"Aurora pricks her finger on a spindle before her sixteenth birthday."},
-    {q:"What is Rapunzel's real name in the Disney version of Tangled?",options:["Rapunzel","Crown","Ariella","Blondie"],answer:0,fact:"Her hair glow heals wounds and reverses aging."},
-    {q:"In Mulan, what does Mulan disguise herself as?",options:["A servant","A soldier","A nobleman","A peasant"],answer:1,fact:"She takes her father's place in the Chinese army."},
-    {q:"What ocean does Moana sail across?",options:["Atlantic","Pacific","Indian","Arctic"],answer:1,fact:"She sails to restore the heart of Te Fiti."},
-    {q:"In Inside Out, what is Riley's main emotion?",options:["Sadness","Anger","Joy","Fear"],answer:2,fact:"Riley moves to San Francisco and struggles with a new city."},
-    {q:"What is the name of Merida's kingdom in Brave?",options:["Scotland","Ireland","Wales","England"],answer:0,fact:"Merida is a princess with curly red hair who loves archery."},
-    {q:"In Coco, what is the name of Miguel's dog?",options:["Dante","Poco","Pepita","Salvador"],answer:0,fact:"Dante is a xoloitzcuintli (hairless dog)."},
-    {q:"What animal is Scuttle in The Little Mermaid?",options:["Crab","Seagull","Fish","Starfish"],answer:1,fact:"Scuttle hilariously misidentifies human objects."},
-    {q:"In Hercules, what is Hercules a son of?",options:["Mortals","Gods","Titans","Monsters"],answer:1,fact:"He's the son of Zeus and Hera."},
-    {q:"What is the snowman's name in Frozen?",options:["Sven","Olaf","Kristoff","Hans"],answer:1,fact:"Olaf dreams of experiencing summer."},
-    {q:"In Aladdin, what does Aladdin find in the Cave of Wonders?",options:["Gold","A lamp","Jewels","A sword"],answer:1,fact:"The lamp contains the genie."},
-    {q:"What is the name of the evil queen in Snow White?",options:["Ursula","Maleficent","The Evil Queen","Cruella"],answer:2,fact:"She asks her mirror who is the fairest of them all."},
-    {q:"What is Alex Russo's wizard secret in Wizards of Waverly Place?",options:["She's a fairy","She's a wizard","She's a mortal","She's a demon"],answer:1,fact:"Selena Gomez played Alex in the iconic Disney Channel series."},
-    {q:"What is Hannah Montana's real name?",options:["Miley Stewart","Sunny Stewart","Hannah Smith","Lilly Truscott"],answer:0,fact:"Miley Cyrus starred in this hit Disney Channel show."},
-    {q:"What ship is the main setting for The Suite Life on Deck?",options:["Titanic","Zack & Cody","SS Tipton","Queen Mary"],answer:2,fact:"It's a spinoff of The Suite Life of Zack & Cody."},
-    {q:"Who is the president's son in Cory in the House?",options:["Cory Matthews","Cory Baxter","President Patterson","Victor Delling"],answer:2,fact:"Cory Baxter moves to the White House in this spinoff."},
-    {q:"What is Phineas and Ferb's signature catchphrase?",options:["Ay caramba!","Whatcha doin'?","Oh snap!","That's hot!"],answer:1,fact:"Dr. Heinz Doofenshmirtz is their comedic neighbor."},
-    {q:"In Gravity Falls, what is the name of the mysterious journal?",options:["Journal 1","Journal 3","The Cipher","Gravity Text"],answer:1,fact:"The show became a fan-favorite mystery series."},
-    {q:"What does Ben 10 use to transform into aliens?",options:["Omnitrix","Ultimatrix","Plumber's badge","Hero watch"],answer:0,fact:"The Omnitrix is a mysterious alien device."},
-    {q:"What is Kim Possible's catchphrase?",options:["No problem!","So not happening!","Call me beep me!","Wade whack!"],answer:2,fact:"Wade Load is her tech-savvy best friend."},
-    {q:"What is the Enchanted Tiki Tiki Room called in Kim Possible?",options:["Bueno Nacho","Kim's Place","Tiki Terrace","Wade's Spot"],answer:0,fact:"It's the hangout spot for the characters."},
-    {q:"In The Emperor's New Groove, what does Kuzco turn into?",options:["Llama","Alpaca","Vicuña","Suri"],answer:0,fact:"Kuzco must learn humility throughout his journey."},
-    {q:"Who is Brandy's anthropomorphic dog best friend?",options:["Daisy","Mr. Whiskers","Woof","Patches"],answer:1,fact:"Brandy & Mr. Whiskers aired as an animated series."},
-    {q:"What is American Dragon: Jake Long's secret identity?",options:["Jake Martin","Jake Long","Jake Park","Jake Chen"],answer:1,fact:"Jake becomes the American Dragon to protect his community."},
-    {q:"What does Liv have that Maddie doesn't in Liv and Maddie?",options:["A twin","A secret career","An identical twin","Two last names"],answer:1,fact:"Dove Cameron played both roles showing her range as an actress."},
-    {q:"In Shake It Up, what is the main TV show called?",options:["Shake It Up Chicago","Chicago Shuffle","Dance It Out","Let's Move"],answer:0,fact:"Bella Thorne and Zendaya starred in this dance show."},
-    {q:"What is Austin Moon's talent in Austin & Ally?",options:["Singing","Dancing","Acting","Magic"],answer:0,fact:"Ross Lynch played Austin in this musical series."},
-    {q:"Who is the wealthy brother in The Suite Life?",options:["Zack Martin","Cody Martin","London Tipton","Moseby"],answer:0,fact:"Dylan and Cole Sprouse played the twin brothers."},
-    {q:"What is So Random! in the Disney Channel universe?",options:["A music video","A sketch comedy show","A dance troupe","A talent show"],answer:1,fact:"This show spun off from Shake It Up."},
-    {q:"What is Sunny Bridges' most prominent feature in Sunny with a Chance?",options:["Red hair","Blue eyes","Optimism","Athletic ability"],answer:2,fact:"She moves to Maine and adapts to a new life."},
-    {q:"In Hey Jesse!, what is Jesús Tonorio's nickname?",options:["Jessie","Rays","JT","Jay"],answer:3,fact:"Raven-Symoné played the lead character."},
-    {q:"The Jonas Brothers appeared in which Disney Channel Original Movie?",options:["High School Musical","Camp Rock","Teen Beach Movie","Walking Dead"],answer:1,fact:"Kevin, Joe, and Nick Jonas starred in Camp Rock."},
-    {q:"What is the portal called in Wizards that leads to the wizard world?",options:["Door way","Wizard portal","Waverly crescent portal","Magic entrance"],answer:0,fact:"The bathroom is the magical entrance in the Russo home."},
-    {q:"What instrument does Austin Moon make music with?",options:["Guitar","Keyboard","Drums","Ukulele"],answer:0,fact:"His songs were featured throughout Austin & Ally."}
+    {q:"Which Disney princess sings 'Part of Your World'?",options:["Ariel","Rapunzel","Cinderella"],answer:0,fact:"The Little Mermaid kicked off the Disney Renaissance in 1989."},
+    {q:"What is the name of the toy astronaut in Toy Story?",options:["Buzz Lightyear","Woody","Rex"],answer:0,fact:"Buzz was originally going to be named Lunar Larry."},
+    {q:"In Beauty and the Beast, what is the enchanted teacup's name?",options:["Chip","Lumiere","Cogsworth"],answer:0,fact:"Chip's sound was made by tapping a real teacup on set."},
+    {q:"What kind of animal is Abu in Aladdin?",options:["Monkey","Parrot","Tiger"],answer:0,fact:"Frank Welker voiced both Abu and the Cave of Wonders."},
+    {q:"What is the name of Simba's wicked uncle?",options:["Scar","Mufasa","Rafiki"],answer:0,fact:"Scar is the only lion in the film who constantly shows his claws."},
+    {q:"What is the name of the snowman in Frozen?",options:["Olaf","Sven","Kristoff"],answer:0,fact:"Olaf dreams of experiencing summer for the first time."},
+    {q:"In Moana, what does she return to Te Fiti?",options:["The heart","The shell","An oar"],answer:0,fact:"Te Fiti is inspired by the Hawaiian goddess Papahanaumoku."},
+    {q:"Which Disney film features the song 'Let It Go'?",options:["Frozen","Brave","Tangled"],answer:0,fact:"Idina Menzel performed the Oscar-winning song."},
+    {q:"What does Hakuna Matata mean?",options:["No worries","Live free","Be brave"],answer:0,fact:"The phrase is a real Swahili saying."},
+    {q:"In Encanto, what is the magical house called?",options:["La Casita","El Hogar","Mi Casa"],answer:0,fact:"The film is set in Colombia and features Lin-Manuel Miranda songs."},
+    {q:"What is the name of Cinderella's fairy godmother?",options:["The Fairy Godmother","Flora","Fauna"],answer:0,fact:"She transforms rags into a ball gown with magic."},
+    {q:"In The Lion King, who is Simba's father?",options:["Mufasa","Scar","Zazu"],answer:0,fact:"Mufasa is voiced by James Earl Jones."},
+    {q:"What is the name of the genie in Aladdin?",options:["Genie","Abu","Jafar"],answer:0,fact:"The Genie is voiced by Robin Williams."},
+    {q:"In Sleeping Beauty, what does Maleficent curse Aurora with?",options:["Eternal sleep","Never finding love","Losing her voice"],answer:0,fact:"Aurora pricks her finger on a spindle before her sixteenth birthday."},
+    {q:"What is Rapunzel's hair used for in Tangled?",options:["Healing","Levitation","Time travel"],answer:0,fact:"Her hair glow heals wounds and reverses aging."},
+    {q:"In Mulan, what does Mulan disguise herself as?",options:["A soldier","A servant","A nobleman"],answer:0,fact:"She takes her father's place in the Chinese army."},
+    {q:"What ocean does Moana sail across?",options:["Pacific","Atlantic","Indian"],answer:0,fact:"She sails to restore the heart of Te Fiti."},
+    {q:"In Inside Out, what emotion controls most of Riley's childhood?",options:["Joy","Sadness","Anger"],answer:0,fact:"Riley moves to San Francisco and struggles with a new city."},
+    {q:"What is Merida's skill in Brave?",options:["Archery","Sword fighting","Magic"],answer:0,fact:"Merida is a princess with curly red hair who loves independence."},
+    {q:"In Coco, what is the name of Miguel's dog?",options:["Dante","Poco","Pepita"],answer:0,fact:"Dante is a xoloitzcuintli (hairless dog)."},
+    {q:"What animal is Scuttle in The Little Mermaid?",options:["Seagull","Crab","Fish"],answer:0,fact:"Scuttle hilariously misidentifies human objects."},
+    {q:"In Hercules, who is Hercules' father?",options:["Zeus","Hephaestus","Ares"],answer:0,fact:"He's the son of Zeus and Hera."},
+    {q:"What is the Emperor's New Groove's main character transformed into?",options:["Llama","Alpaca","Vicuña"],answer:0,fact:"Kuzco must learn humility throughout his journey."},
+    {q:"In Aladdin, where does Aladdin find his magic item?",options:["Cave of Wonders","Market","Palace"],answer:0,fact:"The lamp contains the genie."},
+    {q:"Who is the evil queen in Snow White?",options:["The Evil Queen","Ursula","Maleficent"],answer:0,fact:"She asks her mirror who is the fairest of them all."},
+    ...GENERATED_QUESTIONS.slice(0,25)
   ],
   pop:[
-    {q:"What year did MTV first launch?",options:["1979","1981","1984","1988"],answer:1,fact:"The first music video played was 'Video Killed the Radio Star'."},
-    {q:"Which TV show features a coffee shop called Central Perk?",options:["Seinfeld","How I Met Your Mother","Friends","The Office"],answer:2,fact:"Gunther was played by James Michael Tyler."},
-    {q:"What app was known for 6-second looping videos before TikTok?",options:["Snapchat","Vine","Instagram","Keek"],answer:1,fact:"Vine was shut down by Twitter in 2017."},
-    {q:"Who won the first season of American Idol?",options:["Kelly Clarkson","Carrie Underwood","Jennifer Hudson","Justin Guarini"],answer:0,fact:"She won in 2002 and has sold over 25 million albums since."},
-    {q:"In The Matrix, what pill does Neo take?",options:["Blue","Green","Yellow","Red"],answer:3,fact:"The red pill is now a cultural metaphor for uncomfortable truth."},
-    {q:"Which show made 'winter is coming' famous?",options:["The Witcher","Vikings","Game of Thrones","Merlin"],answer:2,fact:"It's the motto of House Stark."},
-    {q:"What was Pixar's first feature-length film?",options:["A Bug's Life","Monsters Inc","Toy Story","Finding Nemo"],answer:2,fact:"Toy Story was released in 1995 and changed animation history."},
-    {q:"Which social platform invented the 'For You Page'?",options:["Snapchat","Twitter","Instagram","TikTok"],answer:3,fact:"TikTok's FYP is considered one of the most powerful algorithms in tech."},
-    {q:"What TV series is set in Hawkins, Indiana?",options:["Dark","The OA","Stranger Things","Twin Peaks"],answer:2,fact:"The Duffer Brothers pitched the show 15 times before Netflix said yes."},
-    {q:"Which decade did the Spice Girls become famous?",options:["1980s","1990s","2000s","2010s"],answer:1,fact:"Their debut single Wannabe hit number one in 37 countries."}
+    {q:"What year did MTV first launch?",options:["1981","1979","1984"],answer:0,fact:"The first music video played was 'Video Killed the Radio Star'."},
+    {q:"Which TV show features a coffee shop called Central Perk?",options:["Friends","Seinfeld","How I Met Your Mother"],answer:0,fact:"Gunther was played by James Michael Tyler."},
+    {q:"What app was known for 6-second looping videos before TikTok?",options:["Vine","Snapchat","Instagram"],answer:0,fact:"Vine was shut down by Twitter in 2017."},
+    {q:"Who won the first season of American Idol?",options:["Kelly Clarkson","Carrie Underwood","Jennifer Hudson"],answer:0,fact:"She won in 2002 and has sold over 25 million albums since."},
+    {q:"In The Matrix, what pill does Neo take?",options:["Red","Blue","Green"],answer:0,fact:"The red pill is now a cultural metaphor for uncomfortable truth."},
+    {q:"Which show made 'winter is coming' famous?",options:["Game of Thrones","The Witcher","Vikings"],answer:0,fact:"It's the motto of House Stark."},
+    {q:"What was Pixar's first feature-length film?",options:["Toy Story","A Bug's Life","Monsters Inc"],answer:0,fact:"Toy Story was released in 1995 and changed animation history."},
+    {q:"Which social platform invented the 'For You Page'?",options:["TikTok","Instagram","Snapchat"],answer:0,fact:"TikTok's FYP is considered one of the most powerful algorithms in tech."},
+    {q:"What TV series is set in Hawkins, Indiana?",options:["Stranger Things","Dark","The OA"],answer:0,fact:"The Duffer Brothers pitched the show 15 times before Netflix said yes."},
+    {q:"Which decade did the Spice Girls become famous?",options:["1990s","1980s","2000s"],answer:0,fact:"Their debut single Wannabe hit number one in 37 countries."}
   ],
   celeb:[
-    {q:"Who famously slapped Chris Rock at the 2022 Oscars?",options:["Denzel Washington","Will Smith","Kevin Hart","Tom Cruise"],answer:1,fact:"Smith later resigned from the Academy."},
-    {q:"Which couple is famously known as 'Bennifer'?",options:["Ben Stiller & Jen Aniston","Ben Affleck & Jennifer Lopez","Ben Affleck & Jennifer Garner","Ben Foster & Jennifer Lawrence"],answer:1,fact:"They reunited and got married in 2022."},
-    {q:"What is the name of Kim Kardashian's shapewear brand?",options:["Fenty","SKIMS","Kylie Cosmetics","Good American"],answer:1,fact:"SKIMS was valued at $4 billion in 2023."},
-    {q:"Who is the founder of Fenty Beauty?",options:["Selena Gomez","Kylie Jenner","Rihanna","Lady Gaga"],answer:2,fact:"Fenty Beauty revolutionised shade inclusivity in cosmetics."},
-    {q:"Which actor played Jack in Titanic?",options:["Brad Pitt","Matt Damon","Leonardo DiCaprio","Johnny Depp"],answer:2,fact:"DiCaprio ad-libbed 'I'm the king of the world!'"},
-    {q:"What is Taylor Swift's re-recording project called?",options:["Taylor's Version","Original Tapes","My Music","Swift Records"],answer:0,fact:"Swift began re-recording after a dispute over her masters."},
-    {q:"Which rapper is also known as Champagne Papi?",options:["Kendrick Lamar","J. Cole","Drake","Lil Wayne"],answer:2,fact:"Drake got the nickname from fans — his middle name is Aubrey."},
-    {q:"What show made Zendaya famous before her film career?",options:["Victorious","Shake It Up","Wizards of Waverly Place","iCarly"],answer:1,fact:"Zendaya starred alongside Bella Thorne on Disney Channel."},
-    {q:"Which celebrity broke the internet with a Paper Magazine cover?",options:["Nicki Minaj","Rihanna","Kim Kardashian","Beyoncé"],answer:2,fact:"The 2014 cover temporarily crashed parts of the web."},
-    {q:"What show gave Zendaya her Emmy-winning adult role?",options:["Euphoria","Rue's World","Gossip Girl","The White Lotus"],answer:0,fact:"She became the youngest Emmy winner for drama at 24."}
+    {q:"Who famously slapped Chris Rock at the 2022 Oscars?",options:["Will Smith","Denzel Washington","Kevin Hart"],answer:0,fact:"Smith later resigned from the Academy."},
+    {q:"Which couple is famously known as 'Bennifer'?",options:["Ben Affleck & Jennifer Lopez","Ben Stiller & Jen Aniston","Ben Foster & Jennifer Lawrence"],answer:0,fact:"They reunited and got married in 2022."},
+    {q:"What is the name of Kim Kardashian's shapewear brand?",options:["SKIMS","Fenty","Kylie Cosmetics"],answer:0,fact:"SKIMS was valued at $4 billion in 2023."},
+    {q:"Who is the founder of Fenty Beauty?",options:["Rihanna","Selena Gomez","Kylie Jenner"],answer:0,fact:"Fenty Beauty revolutionised shade inclusivity in cosmetics."},
+    {q:"Which actor played Jack in Titanic?",options:["Leonardo DiCaprio","Brad Pitt","Matt Damon"],answer:0,fact:"DiCaprio ad-libbed 'I'm the king of the world!'"},
+    {q:"What is Taylor Swift's re-recording project called?",options:["Taylor's Version","Original Tapes","My Music"],answer:0,fact:"Swift began re-recording after a dispute over her masters."},
+    {q:"Which rapper is also known as Champagne Papi?",options:["Drake","Kendrick Lamar","J. Cole"],answer:0,fact:"Drake got the nickname from fans — his middle name is Aubrey."},
+    {q:"What show made Zendaya famous before her film career?",options:["Shake It Up","Victorious","Wizards of Waverly Place"],answer:0,fact:"Zendaya starred alongside Bella Thorne on Disney Channel."},
+    {q:"Which celebrity broke the internet with a Paper Magazine cover?",options:["Kim Kardashian","Nicki Minaj","Rihanna"],answer:0,fact:"The 2014 cover temporarily crashed parts of the web."},
+    {q:"What show gave Zendaya her Emmy-winning adult role?",options:["Euphoria","Rue's World","Gossip Girl"],answer:0,fact:"She became the youngest Emmy winner for drama at 24."}
   ]
 };
 
@@ -480,7 +516,7 @@ function stopIdleCheck(){ if(G.idleCheckInterval){ clearInterval(G.idleCheckInte
 //  STATE RESET
 // ═══════════════════════════════════════════════════════════════
 function resetGameState(){
-  G.pts=[0,0]; G.drinks=[0,0]; G.cur=0; G.qn=0;
+  G.pts=[0,0]; G.drinks=[0,0]; G.streaks=[0,0]; G.cur=0; G.qn=0;
   G.queue=[]; G.usedIds=new Set(); G.answered=false;
 }
 
@@ -596,22 +632,29 @@ function pick(chosen,correct){
   const theirName=them===0?G.p1:G.p2;
   const box=document.getElementById('result-box');
   if(chosen===correct){
-    G.pts[me]++; G.drinks[them]++;
+    G.pts[me]++;
+    G.streaks[me]++;
+    G.streaks[them]=0;
+    const drinkAmount=2*G.streaks[me];
+    G.drinks[them]+=drinkAmount;
     box.className='result-box show result-correct';
     document.getElementById('res-emoji').textContent='🎉';
-    document.getElementById('res-title').textContent='Correct! '+theirName+' drinks 🥃';
+    document.getElementById('res-title').textContent='Correct! '+theirName+' drinks '+drinkAmount+' 🥃';
     confetti(30);
   } else {
-    G.pts[them]++; G.drinks[me]++;
+    G.pts[them]++;
+    G.streaks[me]++;
+    const drinkAmount=2*G.streaks[me];
+    G.drinks[me]+=drinkAmount;
     box.className='result-box show result-wrong';
     document.getElementById('res-emoji').textContent='💀';
-    document.getElementById('res-title').textContent='Wrong! Take a shot 🥃';
+    document.getElementById('res-title').textContent='Wrong! Take '+drinkAmount+' shots 🥃';
     pinkFlash();
   }
   if(document.getElementById('fact-text').textContent)
     document.getElementById('fact-box').className='fact-box show';
   refreshUI();
-  scheduleSyncToDB(); // debounced, only on real game events
+  scheduleSyncToDB();
   if(G.pts[0]>=10||G.pts[1]>=10){
     setTimeout(showWinner,1200);
   } else {
