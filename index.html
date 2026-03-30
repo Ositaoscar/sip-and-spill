@@ -250,7 +250,7 @@ let G = {
   cur:0, pts:[0,0], drinks:[0,0], streaks:[0,0],
   cat:null, sub:null,
   usedIds:new Set(), queue:[], qn:0, answered:false,
-  gameId:null, gameCode:null, isHost:false, isLocal:false, subscription:null,
+  gameId:null, gameCode:null, isHost:false, isLocal:false, subscription:null, pollInterval:null,
   lastActivityTime:0, idleCheckInterval:null, warnedIdle:false
 };
 
@@ -353,7 +353,22 @@ const BANK = {
     {q:"What was Pixar's first feature-length film?",options:["Toy Story","A Bug's Life","Monsters Inc"],answer:0,fact:"Toy Story was released in 1995 and changed animation history."},
     {q:"Which social platform invented the 'For You Page'?",options:["TikTok","Instagram","Snapchat"],answer:0,fact:"TikTok's FYP is considered one of the most powerful algorithms in tech."},
     {q:"What TV series is set in Hawkins, Indiana?",options:["Stranger Things","Dark","The OA"],answer:0,fact:"The Duffer Brothers pitched the show 15 times before Netflix said yes."},
-    {q:"Which decade did the Spice Girls become famous?",options:["1990s","1980s","2000s"],answer:0,fact:"Their debut single Wannabe hit number one in 37 countries."}
+    {q:"Which decade did the Spice Girls become famous?",options:["1990s","1980s","2000s"],answer:0,fact:"Their debut single Wannabe hit number one in 37 countries."},
+    {q:"In Breaking Bad, what is Walter White's drug alias?",options:["Heisenberg","Methhead","Cook"],answer:0,fact:"Bryan Cranston won 4 Emmy Awards for the role."},
+    {q:"Which show is famous for its mockumentary format?",options:["The Office","Parks & Rec","Brooklyn Nine-Nine"],answer:0,fact:"Steve Carell played Michael Scott for 7 seasons."},
+    {q:"What movie is the highest-grossing film of all time?",options:["Avatar","Avengers Endgame","Titanic"],answer:0,fact:"Avatar was directed by James Cameron."},
+    {q:"In The Crown, who plays Princess Diana?",options:["Emma Corrin","Claire Foy","Gillian Anderson"],answer:0,fact:"Emma Corrin won a Golden Globe for the role."},
+    {q:"Which K-pop group has the most Spotify streams?",options:["BTS","BLACKPINK","EXO"],answer:0,fact:"BTS broke multiple Grammy and Billboard records."},
+    {q:"What Netflix series follows criminals in money laundering?",options:["Ozark","Breaking Bad","Narcos"],answer:0,fact:"Jason Bateman directed many episodes of Ozark."},
+    {q:"Which TV show features a chef opening a restaurant in bear country?",options:["The Bear","Schitt's Creek","Chef's Table"],answer:0,fact:"The Bear won multiple Emmy nominations in 2023."},
+    {q:"What is the name of The Weeknd's signature look?",options:["Face bandages","Full mask","Gold makeup"],answer:0,fact:"He wore bandages during his Starboy era."},
+    {q:"In Squid Game, what game grants immunity?",options:["Red light green light","Marbles","Glass bridge"],answer:0,fact:"The show became Netflix's most-watched series."},
+    {q:"Which artist sang 'Levitating' with Dua Lipa?",options:["DaBaby","The Weeknd","Khalid"],answer:0,fact:"It was a massive TikTok/streaming hit in 2020."},
+    {q:"What show ends with Ted telling his kids about their mother?",options:["How I Met Your Mother","Friends","The Office"],answer:0,fact:"The finale was controversial among fans."},
+    {q:"Which reality show follows billionaires in Beverly Hills?",options:["Real Housewives of Beverly Hills","Selling Sunset","Bling Empire"],answer:0,fact:"It's one of Bravo's longest-running franchises."},
+    {q:"In Euphoria, what is Rue's main struggle?",options:["Addiction","School pressure","Relationships"],answer:0,fact:"Zendaya won an Emmy for the role at age 24."},
+    {q:"Which Beyoncé album dropped without warning in 2013?",options:["Beyoncé","Lemonade","Renaissance"],answer:0,fact:"It revolutionized album release strategies."},
+    {q:"What streaming service produced The Last of Us?",options:["HBO Max","Netflix","Apple TV+"],answer:0,fact:"It was one of 2023's most acclaimed TV shows."}
   ],
   celeb:[
     {q:"Who famously slapped Chris Rock at the 2022 Oscars?",options:["Will Smith","Denzel Washington","Kevin Hart"],answer:0,fact:"Smith later resigned from the Academy."},
@@ -365,7 +380,22 @@ const BANK = {
     {q:"Which rapper is also known as Champagne Papi?",options:["Drake","Kendrick Lamar","J. Cole"],answer:0,fact:"Drake got the nickname from fans — his middle name is Aubrey."},
     {q:"What show made Zendaya famous before her film career?",options:["Shake It Up","Victorious","Wizards of Waverly Place"],answer:0,fact:"Zendaya starred alongside Bella Thorne on Disney Channel."},
     {q:"Which celebrity broke the internet with a Paper Magazine cover?",options:["Kim Kardashian","Nicki Minaj","Rihanna"],answer:0,fact:"The 2014 cover temporarily crashed parts of the web."},
-    {q:"What show gave Zendaya her Emmy-winning adult role?",options:["Euphoria","Rue's World","Gossip Girl"],answer:0,fact:"She became the youngest Emmy winner for drama at 24."}
+    {q:"What show gave Zendaya her Emmy-winning adult role?",options:["Euphoria","Rue's World","Gossip Girl"],answer:0,fact:"She became the youngest Emmy winner for drama at 24."},
+    {q:"Which celebrity is married to Kardashian matriarch Kris Jenner?",options:["None","Caitlyn Jenner (formerly)","Corey Gamble"],answer:2,fact:"Corey Gamble has been in a relationship with Kris since 2014."},
+    {q:"What is Kylie Jenner's beauty brand called?",options:["Kylie Cosmetics","Kylie Beauty","Kylie Glam"],answer:0,fact:"She became the youngest self-made billionaire in 2019."},
+    {q:"Which actor is known for his role in the Twilight franchise?",options:["Robert Pattinson","Zac Efron","Tom Holland"],answer:0,fact:"Pattinson played Edward Cullen opposite Kristen Stewart."},
+    {q:"Who is Meghan Markle married to?",options:["Prince Harry","Prince William","Prince Charles"],answer:0,fact:"They stepped back from royal duties in 2020."},
+    {q:"Which celebrity dating app did Raya founder fund?",options:["Raya","Seed","The League"],answer:0,fact:"Raya is known as the 'exclusive' dating app for celebrities."},
+    {q:"What podcast do Joe Rogan and friends record?",options:["Joe Rogan Experience","Lex Fridman","H3 Podcast"],answer:0,fact:"It's one of Spotify's most popular podcasts."},
+    {q:"Which celebrity couple got married in 2022 on a yacht?",options:["Kourtney & Travis","Kim & Kanye","Khloé & Tristan"],answer:0,fact:"Kourtney Kardashian & Travis Barker's wedding was elaborate."},
+    {q:"Who is the founder of Skims' main competitor Spanx?",options:["Sara Blakely","Kim Kardashian","Oprah"],answer:0,fact:"Sara Blakely went from door-to-door sales to billionaire status."},
+    {q:"Which celebrity owns a vineyard and produces wine?",options:["Meghan Markle","Gwyneth Paltrow","Blake Lively"],answer:0,fact:"Meghan launched her lifestyle brand Tig before royalty."},
+    {q:"What is Dwayne Johnson's most famous catchphrase?",options:["It doesn't matter","Know your role","Layeth the smacketh"],answer:0,fact:"'The Rock' is one of the highest-paid actors in Hollywood."},
+    {q:"Which celebrity launched a gin brand?",options:["Ryan Reynolds","George Clooney","Kendall Jenner"],answer:0,fact:"Ryan Reynolds' Aviation American Gin is wildly successful."},
+    {q:"Who is the most-followed person on Instagram?",options:["Cristiano Ronaldo","Kylie Jenner","Lionel Messi"],answer:0,fact:"Ronaldo surpassed 600 million followers in 2024."},
+    {q:"Which actress founded Goop, a wellness lifestyle brand?",options:["Gwyneth Paltrow","Jennifer Aniston","Julia Roberts"],answer:0,fact:"Goop became controversial for unproven wellness claims."},
+    {q:"Who is married to Travis Kelce of the Kansas City Chiefs?",options:["None currently","Taylor Swift (dating)","Kylie Kelce"],answer:1,fact:"Taylor Swift has been dating Travis Kelce since 2023."},
+    {q:"Which celebrity has the most expensive home ever sold?",options:["Jeff Bezos","Jay-Z & Beyoncé","Elon Musk"],answer:0,fact:"Bezos bought a $165M mansion in Beverly Hills."}
   ]
 };
 
@@ -450,26 +480,49 @@ async function joinRoom(){
   finally { btn.disabled=false; btn.innerHTML='Join 🎉'; }
 }
 
-// FIX: subscription scoped to this specific game row only
+// FIX: subscription + polling fallback for realtime detection
 function listenForGameStart(){
   if(!sb||!G.gameId) return;
+  let pollInterval=null;
+  
+  // Polling fallback: check every 1s if guest joined
+  const pollForGuest=async()=>{
+    try{
+      const {data}=await sb.from('games').select('game_status,player2_name').eq('id',G.gameId).single();
+      if(data?.game_status==='active'&&G.isHost){
+        if(data.player2_name) G.p2=data.player2_name;
+        clearInterval(pollInterval);
+        cleanupSubscription();
+        resetGameState(); resetCatUI(); show('scr-cats');
+      }
+    }catch(e){ console.warn('Poll error:',e.message); }
+  };
+  
+  // Start polling
+  pollInterval=setInterval(pollForGuest,1000);
+  G.pollInterval=pollInterval;
+  
+  // Also try realtime (redundant but catches faster responses)
   G.subscription=sb
     .channel('game-'+G.gameId)
     .on('postgres_changes',
       {event:'UPDATE',schema:'public',table:'games',filter:'id=eq.'+G.gameId},
       (payload)=>{
         if(payload.new.game_status==='active'&&G.isHost){
-          // FIX: sync actual P2 name entered by the joiner
           if(payload.new.player2_name) G.p2=payload.new.player2_name;
+          clearInterval(pollInterval);
           cleanupSubscription();
           resetGameState(); resetCatUI(); show('scr-cats');
         }
       }
-    ).subscribe();
+    ).subscribe((status)=>{
+      if(status==='SUBSCRIBED') console.log('✓ Realtime listener ready');
+      if(status==='CHANNEL_ERROR') console.warn('⚠️ Realtime error, using polling');
+    });
 }
 
 function leaveGame(){ cleanupSubscription(); stopIdleCheck(); G.gameId=null; G.gameCode=null; show('scr-welcome'); }
-function cleanupSubscription(){ if(G.subscription){ G.subscription.unsubscribe(); G.subscription=null; } }
+function cleanupSubscription(){ if(G.subscription){ G.subscription.unsubscribe(); G.subscription=null; } if(G.pollInterval){ clearInterval(G.pollInterval); G.pollInterval=null; } }
 function goHome(){ stopIdleCheck(); cleanupSubscription(); G.gameId=null; G.gameCode=null; show('scr-welcome'); }
 
 // ═══════════════════════════════════════════════════════════════
